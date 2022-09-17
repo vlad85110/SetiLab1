@@ -47,10 +47,6 @@ public class GraphicsView extends JFrame implements View {
     }
 
     @Override
-    public void log(String text) {
-    }
-
-    @Override
     public void updateAddresses(List<String> addresses) {
         addressesLabel.setText("Addresses: " + addresses.toString());
     }

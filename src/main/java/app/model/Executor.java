@@ -12,17 +12,22 @@ import java.net.NetworkInterface;
 
 public class Executor {
     private final MulticastSocket socket;
-    private final Sender sender;
-    private final Receiver receiver;
-    private final Cleaner cleaner;
+    private final Thread sender;
+    private final Thread receiver;
+    private final Thread cleaner;
     private final View view;
 
     private final InetSocketAddress socketAddress;
     private final NetworkInterface networkInterface;
 
+    private final SenderRunnable senderRunnable;
+    private final ReceiverRunnable receiverRunnable;
+    private final CleanerRunnable cleanerRunnable;
+
 
     public Executor(View view) throws IOException, ParseConfigException {
-        int port, encrypt;
+        int port;
+        boolean encrypt;
         long timeBetweenClean, disconnectTime, timeBetweenSend;
         String hostName, keyPath;
 
@@ -35,7 +40,7 @@ public class Executor {
             timeBetweenClean = Long.parseLong(config.get("timeBetweenClean"));
             disconnectTime = Long.parseLong(config.get("disconnectTime"));
             timeBetweenSend = Long.parseLong(config.get("timeBetweenSend"));
-            encrypt = Integer.parseInt(config.get("encrypt"));
+            encrypt = Boolean.parseBoolean(config.get("encrypt"));
         } catch (NumberFormatException e) {
             throw new ParseConfigException(e);
         }
@@ -50,7 +55,7 @@ public class Executor {
         Counter counter = new Counter();
 
         MessageSecure secure;
-        if (encrypt == 1) {
+        if (encrypt) {
             keyPath = config.get("keyPath");
             if (keyPath == null) {
                 throw new ParseConfigException("keyPath");
@@ -61,9 +66,13 @@ public class Executor {
             secure = null;
         }
 
-        sender = new Sender(socket, hostName, port, timeBetweenSend, secure);
-        receiver = new Receiver(socket, counter, view, secure);
-        cleaner = new Cleaner(counter, view, timeBetweenClean, disconnectTime);
+        senderRunnable = new SenderRunnable(socket, hostName, port, timeBetweenSend, secure);
+        receiverRunnable = new ReceiverRunnable(socket, counter, view, secure);
+        cleanerRunnable = new CleanerRunnable(counter, view, timeBetweenClean, disconnectTime);
+
+        sender = new Thread(senderRunnable);
+        receiver = new Thread(receiverRunnable);
+        cleaner = new Thread(cleanerRunnable);
     }
 
     public MulticastSocket getSocket() {
@@ -82,11 +91,9 @@ public class Executor {
 
 
     public void exit() {
-        sender.stopThread();
-        receiver.stopThread();
-        receiver.interrupt();
-        cleaner.stopThread();
-        cleaner.interrupt();
+        senderRunnable.stopRunnable();
+        receiverRunnable.stopRunnable();
+        cleanerRunnable.stopRunnable();
 
         try {
             sender.join();

@@ -4,14 +4,13 @@ import app.view.View;
 
 import java.util.ArrayList;
 
-public class Cleaner extends AbstractAppThread {
+public class CleanerRunnable extends AbstractAppRunnable {
     private final Counter counter;
     private final View view;
     private final long timeBetweenClean;
     private final long disconnectTime;
 
-    public Cleaner(Counter counter, View view, long timeBetweenClean, long disconnectTime) {
-        super("cleaner");
+    public CleanerRunnable(Counter counter, View view, long timeBetweenClean, long disconnectTime) {
         this.timeBetweenClean = timeBetweenClean;
         this.disconnectTime = disconnectTime;
         this.counter = counter;
@@ -20,12 +19,6 @@ public class Cleaner extends AbstractAppThread {
 
     @Override
     public void workMethod() {
-        try {
-            Thread.sleep(1000 * timeBetweenClean);
-        } catch (InterruptedException e) {
-            //
-        }
-
         var curTime = System.currentTimeMillis();
         var nums = counter.getNums();
         var disconnected = new ArrayList<Double>();
@@ -49,8 +42,13 @@ public class Cleaner extends AbstractAppThread {
     }
 
     @Override
-    public void stopThread() {
-        super.stopThread();
+    public long getDelay() {
+        return timeBetweenClean;
+    }
+
+    @Override
+    public void stopRunnable() {
+        super.stopRunnable();
         counter.clearAddresses();
         counter.clearNums();
     }

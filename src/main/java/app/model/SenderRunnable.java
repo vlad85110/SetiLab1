@@ -3,6 +3,8 @@ package app.model;
 import app.exceptions.MulticastException;
 import app.exceptions.WriteSocketException;
 import app.secure.MessageSecure;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 import org.json.JSONException;
 
@@ -10,15 +12,15 @@ import java.io.IOException;
 import java.net.*;
 import java.util.Random;
 
-public class Sender extends AbstractMulticastThread {
+public class SenderRunnable extends AbstractMulticastRunnable implements Runnable {
     private final String hostName;
     private final int port;
     private final double uniqueNum;
     private final long timeBetweenSend;
     private final MessageSecure secure;
 
-    public Sender(MulticastSocket socket, String hostName, int port, long timeBetweenSend, MessageSecure secure) {
-        super("sender", socket);
+    public SenderRunnable(MulticastSocket socket, String hostName, int port, long timeBetweenSend, MessageSecure secure) {
+        super(socket);
 
         this.hostName = hostName;
         this.port = port;
@@ -29,31 +31,15 @@ public class Sender extends AbstractMulticastThread {
         this.uniqueNum = random.nextDouble();
     }
 
-    public Sender(MulticastSocket socket, String hostName, int port, long timeBetweenSend) {
-        this(socket, hostName, port, timeBetweenSend, null);
+    public long getDelay() {
+        return timeBetweenSend;
     }
 
-    @Override
     public void workMethod() throws MulticastException {
-        try {
-            sleep(1000 * timeBetweenSend);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
         sendDgram(Status.Live);
     }
 
-    @Override
-    public void stopThread() {
-        super.stopThread();
-
-        try {
-            this.join();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+    public void stopRunnable() {
         try {
             sendDgram(Status.Exit);
         } catch (MulticastException e) {
@@ -81,22 +67,35 @@ public class Sender extends AbstractMulticastThread {
         try {
             socket.send(packet);
         } catch (IOException e) {
-            throw new WriteSocketException();
+            throw new WriteSocketException(e);
         }
     }
 
     private String createSelfInfoString(Status status) throws MulticastException{
-        JSONObject object = new JSONObject();
-
+        Message message;
         try {
-            object.put("status", status);
-            object.put("isApp", 1);
-            object.put("num", uniqueNum);
-            object.put("address", Inet4Address.getLocalHost().getHostAddress());
-        } catch (JSONException | UnknownHostException e) {
+            message = new Message(status, uniqueNum);
+        } catch (UnknownHostException e) {
             throw new MulticastException(e);
         }
 
-        return object.toString();
+        String json;
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            json = mapper.writeValueAsString(message);
+        } catch (JsonProcessingException e) {
+            throw new MulticastException(e);
+        }
+
+        return json;
+    }
+
+    @Override
+    public void run() {
+        try {
+            workMethod();
+        } catch (MulticastException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

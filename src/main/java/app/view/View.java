@@ -10,7 +10,5 @@ public interface View {
 
     void updateAddresses(List<String> addresses);
 
-    void log(String text);
-
     void connect(Executor executor);
 }
