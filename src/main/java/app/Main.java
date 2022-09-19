@@ -12,8 +12,15 @@ public class Main {
         View view = new GraphicsView();
         Executor executor;
 
+        String address = null;
         try {
-            executor = new Executor(view);
+            address = args[0];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            //
+        }
+
+        try {
+            executor = new Executor(view, address);
         } catch (ParseConfigException e) {
             throw new RuntimeException(e);
         }

@@ -4,20 +4,17 @@ import app.view.View;
 
 import java.util.ArrayList;
 
-public class CleanerRunnable extends AbstractAppRunnable {
+public class CleanerRunnable implements Runnable {
     private final Counter counter;
     private final View view;
-    private final long timeBetweenClean;
     private final long disconnectTime;
 
-    public CleanerRunnable(Counter counter, View view, long timeBetweenClean, long disconnectTime) {
-        this.timeBetweenClean = timeBetweenClean;
+    public CleanerRunnable(Counter counter, View view, long disconnectTime) {
         this.disconnectTime = disconnectTime;
         this.counter = counter;
         this.view = view;
     }
 
-    @Override
     public void workMethod() {
         var curTime = System.currentTimeMillis();
         var nums = counter.getNums();
@@ -42,14 +39,7 @@ public class CleanerRunnable extends AbstractAppRunnable {
     }
 
     @Override
-    public long getDelay() {
-        return timeBetweenClean;
-    }
-
-    @Override
-    public void stopRunnable() {
-        super.stopRunnable();
-        counter.clearAddresses();
-        counter.clearNums();
+    public void run() {
+        workMethod();
     }
 }

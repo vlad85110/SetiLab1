@@ -13,7 +13,7 @@ public class GraphicsView extends JFrame implements View {
     private final JLabel addressesLabel;
 
     public GraphicsView() {
-        super("org/app");
+        super("app");
 
         setSize(300, 200);
         Location.centreWindow(this);
@@ -43,7 +43,7 @@ public class GraphicsView extends JFrame implements View {
 
     @Override
     public void updateOnline(int online) {
-        this.counter.setText("Online: " + online);
+        SwingUtilities.invokeLater(() ->  this.counter.setText("Online: " + online));
     }
 
     @Override

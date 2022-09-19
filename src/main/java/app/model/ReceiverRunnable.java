@@ -1,18 +1,13 @@
 package app.model;
 
 import app.exceptions.MulticastException;
-import app.exceptions.ParseJsonException;
 import app.exceptions.ReadSocketException;
 import app.secure.MessageSecure;
 import app.view.View;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jetbrains.annotations.NotNull;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
 import java.net.SocketException;
@@ -36,13 +31,11 @@ public class ReceiverRunnable extends AbstractMulticastRunnable implements Runna
 
     @Override
     public void run() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
                 workMethod();
             } catch (MulticastException e) {
                 //
-            } catch (InterruptedException e) {
-                break;
             }
         }
     }
@@ -62,7 +55,6 @@ public class ReceiverRunnable extends AbstractMulticastRunnable implements Runna
         } else {
             str = new String(packet.getData());
         }
-        System.out.println(str);
 
         ObjectMapper mapper = new ObjectMapper();
         Message message;
@@ -86,15 +78,17 @@ public class ReceiverRunnable extends AbstractMulticastRunnable implements Runna
         Status status = message.getStatus();
 
         switch (status) {
-            case Live:
+            case Live -> {
                 var isAddNum = counter.addNum(num);
                 var isAddAddress = counter.addAddress(address, num);
-                isNeedUpdate =  isAddNum || isAddAddress;
+                isNeedUpdate = isAddNum || isAddAddress;
                 return isNeedUpdate;
-            case Exit:
+            }
+            case Exit -> {
                 counter.delAddress(address, num);
                 counter.delNum(num);
                 return true;
+            }
         }
 
         return false;

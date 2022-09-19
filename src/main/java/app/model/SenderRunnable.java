@@ -5,8 +5,6 @@ import app.exceptions.WriteSocketException;
 import app.secure.MessageSecure;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.json.JSONObject;
-import org.json.JSONException;
 
 import java.io.IOException;
 import java.net.*;
@@ -16,35 +14,21 @@ public class SenderRunnable extends AbstractMulticastRunnable implements Runnabl
     private final String hostName;
     private final int port;
     private final double uniqueNum;
-    private final long timeBetweenSend;
     private final MessageSecure secure;
 
-    public SenderRunnable(MulticastSocket socket, String hostName, int port, long timeBetweenSend, MessageSecure secure) {
+    public SenderRunnable(MulticastSocket socket, String hostName, int port, MessageSecure secure) {
         super(socket);
 
         this.hostName = hostName;
         this.port = port;
-        this.timeBetweenSend = timeBetweenSend;
         this.secure = secure;
 
         Random random = new Random();
         this.uniqueNum = random.nextDouble();
     }
 
-    public long getDelay() {
-        return timeBetweenSend;
-    }
-
     public void workMethod() throws MulticastException {
         sendDgram(Status.Live);
-    }
-
-    public void stopRunnable() {
-        try {
-            sendDgram(Status.Exit);
-        } catch (MulticastException e) {
-            //
-        }
     }
 
     public void sendDgram(Status status) throws MulticastException {
@@ -96,6 +80,14 @@ public class SenderRunnable extends AbstractMulticastRunnable implements Runnabl
             workMethod();
         } catch (MulticastException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void sendExit() {
+        try {
+            sendDgram(Status.Exit);
+        } catch (MulticastException e) {
+            //
         }
     }
 }
